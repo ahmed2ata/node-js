@@ -1,0 +1,2 @@
+-First, we have a "index.js" code which takes a csv data from a file,reads it and then writes a paragraph for each employee with task requirements in another file
+-Seconed , we have "HTML_scarping.js" which takes a html code of course content web page then extractes the names of each lesson
