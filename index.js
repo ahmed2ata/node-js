@@ -12,45 +12,67 @@ Task requirements:
 - save new data in a new file
 
 */
+// 4 date   5 time 6 country 9 timezone 8 language 7 country name 2 name 3 full email 0 id 1 gender 
+// you will not copy the code .. you will write it yourself. character by character.
+
 
 import { DateTime } from 'luxon';
 import * as fs from 'fs';
-// Reading the CSV file
-let data = fs.readFileSync('./MOCK_DATA.csv', { encoding: 'utf-8', flag: 'r' });
 
-let data_array = data.split('\n');
-let new_data = '';
+// 1. Read CSV File
+const data = fs.readFileSync('C:/Users/ataaa/OneDrive/سطح المكتب/nodejs/excersis2/MOCK_DATA.csv', { encoding: 'utf-8' });
+const lines = data.split('\n').filter(line => line.trim() !== ''); // Remove empty lines
 
-data_array.forEach(line => {
-    // split each line by comma
-    let ln = line.split(',');
+let output = '';
 
-    // Parsing date and time using the correct format and zone
-    let full = DateTime.fromFormat(`${ln[4]} ${ln[5]}`, 'MM/dd/yyyy t', { zone: ln[9] });
-    console.log(full.toISO());
+// 2. Process Each Line
+lines.forEach((line, index) => {
+    // Skip header row if exists
+    if (index === 0 && line.startsWith('id,')) return;
 
-    // Setting the locale correctly
-    let local_datetime = full.setLocale(`${ln[8]}-${ln[6]}`).toLocaleString(DateTime.DATETIME_FULL);
+    const columns = line.split(',');
+    
+    // 3. Validate Columns
+    if (columns.length < 10) {
+        console.error(`Skipping malformed line: ${line}`);
+        return;
+    }
 
-    // Parsing October 2025 date and time with the correct format
-    let october = DateTime.fromISO('2025-10-01T00:00:00', { zone: ln[9] });
+    // 4. Parse Date/Time
+    try {
+        const dateTime = DateTime.fromFormat(
+            `${columns[4].trim()} ${columns[5].trim()}`, 
+            'MM/dd/yyyy t', 
+            { zone: columns[9].trim() }
+        );
 
-    // Calculating the difference in years
-    let diff = october.diff(full, 'years');
+        if (!dateTime.isValid) {
+            console.error(`Invalid date for line ${index}: ${line}`);
+            return;
+        }
 
-    // Gender-based pronoun selection "if he is male so it will be his otherwise it would be her"
-    let g = ln[1] === 'male' ? 'his' : 'her';
+        // 5. Format Localized Date
+        const locale = `${columns[8].trim()}-${columns[6].trim()}`;
+        const localDatetime = dateTime.setLocale(locale).toLocaleString(DateTime.DATETIME_FULL);
 
-    // Creating the output template
-    let temp = `${ln[0]} - ${ln[2]} is born in ${ln[7]} in ${local_datetime}
-${g} age in 2025 will be almost ${Math.round(diff.years)} years
-his her contact info is : ${ln[3]}
+        // 6. Calculate Age in 2025
+        const oct2025 = DateTime.fromISO('2025-10-01', { zone: columns[9].trim() });
+        const ageDiff = oct2025.diff(dateTime, 'years').years;
+
+        // 7. Gender-Specific Pronoun
+        const pronoun = columns[1].trim().toLowerCase() === 'male' ? 'his' : 'her';
+
+        // 8. Generate Output Template
+        output += `${columns[0]} - ${columns[2]} is born in ${columns[7]} in ${localDatetime}
+${pronoun} age in 2025 will be almost ${Math.round(ageDiff)} years
+${pronoun} contact info is: ${columns[3]}
 ----------------------
 `;
-
-    // Adding the result to new_data
-    new_data += temp;
+    } catch (error) {
+        console.error(`Error processing line ${index}:`, error.message);
+    }
 });
 
-// Writing the output to a new file
-fs.writeFileSync('./new_data.txt', new_data, { encoding: 'utf-8' });
+// 9. Write Results to File
+fs.writeFileSync('C:/Users/ataaa/OneDrive/سطح المكتب/nodejs/excersis2/output_results.txt', output);
+console.log('Processing complete! Results saved to output_results.txt');
